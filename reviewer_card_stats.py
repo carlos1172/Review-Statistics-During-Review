@@ -3,6 +3,8 @@ from aqt import mw
 
 from aqt.gui_hooks import deck_browser_will_render_content, profile_did_open
 
+from aqt import gui_hooks
+
 def new_count():
 	top = mw.col.sched.deck_due_tree()
 	ncount = 0
@@ -27,7 +29,7 @@ def review_count():
 def clr_str(s,c):
 	return f"""<font color="#{c}"> {str(s)} </font>"""
 
-def add_info(overview, content):
+def add_info():
     global n_new
     global n_learn
     global n_review
@@ -53,10 +55,7 @@ def add_info(overview, content):
     n_reviewmature = len(mw.col.find_cards("is:due is:review prop:ivl>=21 prop:ivl<99"))
     n_reviewsupermature = len(mw.col.find_cards("is:due is:review prop:ivl>=100"))
     
-def add_deckbrowser_hook():
-    deck_browser_will_render_content.append(add_info)
-
-profile_did_open.append(add_deckbrowser_hook)
+gui_hooks.main_window_did_init.append(add_info)
 
 # -*- coding: utf-8 -*-
 
