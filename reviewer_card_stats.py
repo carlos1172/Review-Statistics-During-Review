@@ -256,7 +256,7 @@ class StatsSidebar(object):
         revWeight8 = float((1+(1*TR8*lrnSteps))/1)
         
         # Get studdied cards
-        cards, thetime, failed, lrn1, lrn2, lrn3, flunked, passed, flunked1, passed1, flunked2, passed2, flunked3, passed3, flunked4, passed4, flunked5, passed5, flunked6, passed6, flunked7, passed7, flunked8, passed8, passed_supermature, flunked_supermature = self.mw.col.db.first(
+        cards, thetime, failed, lrn1, lrn2, lrn3, flunked, passed, passed_supermature, flunked_supermature = self.mw.col.db.first(
                 """select 
                 count(), /* cards */
                 sum(time)/1000, /* thetime */
@@ -266,22 +266,6 @@ class StatsSidebar(object):
                 sum(case when Ivl = 1 then 1 else 0 end), /* lrn3 */
                 sum(case when ease = 1 and type == 1 then 1 else 0 end), /* flunked */
                 sum(case when ease > 1 and type == 1 then 1 else 0 end), /* passed */
-                sum(case when ease = 1 and type == 1 and lastIvl == 1 then 1 else 0 end), /* flunked1 */
-                sum(case when ease > 1 and type == 1 and lastIvl == 1 then 1 else 0 end), /* passed1 */
-                sum(case when ease = 1 and type == 1 and lastIvl == 2 then 1 else 0 end), /* flunked2 */
-                sum(case when ease > 1 and type == 1 and lastIvl == 2 then 1 else 0 end), /* passed2 */
-                sum(case when ease = 1 and type == 1 and lastIvl == 3 then 1 else 0 end), /* flunked3 */
-                sum(case when ease > 1 and type == 1 and lastIvl == 3 then 1 else 0 end), /* passed3 */
-                sum(case when ease = 1 and type == 1 and lastIvl == 4 then 1 else 0 end), /* flunked4 */
-                sum(case when ease > 1 and type == 1 and lastIvl == 4 then 1 else 0 end), /* passed4 */
-                sum(case when ease = 1 and type == 1 and lastIvl == 5 then 1 else 0 end), /* flunked5 */
-                sum(case when ease > 1 and type == 1 and lastIvl == 5 then 1 else 0 end), /* passed5 */
-                sum(case when ease = 1 and type == 1 and lastIvl == 6 then 1 else 0 end), /* flunked6 */
-                sum(case when ease > 1 and type == 1 and lastIvl == 6 then 1 else 0 end), /* passed6 */ 
-                sum(case when ease = 1 and type == 1 and lastIvl between 7 and 21 then 1 else 0 end), /* flunked7 */
-                sum(case when ease > 1 and type == 1 and lastIvl between 7 and 21 then 1 else 0 end), /* passed7 */ 
-                sum(case when ease = 1 and type == 1 and lastIvl between 22 and 99 then 1 else 0 end), /* flunked8 */
-                sum(case when ease > 1 and type == 1 and lastIvl between 22 and 99 then 1 else 0 end), /* passed8 */ 
                 sum(case when ease > 1 and type == 1 and lastIvl >= 100 then 1 else 0 end), /* passed_supermature */
                 sum(case when ease = 1 and type == 1 and lastIvl >= 100 then 1 else 0 end) /* flunked_supermature */
                 from revlog where id > ?""",
@@ -295,22 +279,6 @@ class StatsSidebar(object):
         lrn3 = lrn3 or 0
         flunked = flunked or 0
         passed = passed or 0
-        flunked1 = flunked1 or 0
-        passed1 = passed1 or 0
-        flunked2 = flunked2 or 0
-        passed2 = passed2 or 0
-        flunked3 = flunked3 or 0
-        passed3 = passed3 or 0
-        flunked4 = flunked4 or 0
-        passed4 = passed4 or 0
-        flunked5 = flunked5 or 0
-        passed5 = passed5 or 0
-        flunked6 = flunked6 or 0
-        passed6 = passed6 or 0   
-        flunked7 = flunked7 or 0
-        passed7 = passed7 or 0 
-        flunked8 = flunked8 or 0
-        passed8 = passed8 or 0  
         passed_supermature = passed_supermature or 0
         flunked_supermature = flunked_supermature or 0
         
