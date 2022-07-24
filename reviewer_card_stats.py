@@ -101,7 +101,7 @@ import math
 from datetime import datetime, timezone, timedelta, date
 import time
 
-showDebug = 1
+showDebug = 0
 
 class StatsSidebar(object):
     def __init__(self, mw):
