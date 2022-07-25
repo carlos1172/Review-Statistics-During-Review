@@ -1,83 +1,3 @@
-from aqt import mw
-# from aqt.qt import *
-
-from aqt.gui_hooks import deck_browser_will_render_content, profile_did_open
-
-from aqt import gui_hooks
-
-def new_count():
-	top = mw.col.sched.deck_due_tree()
-	ncount = 0
-	for child in top.children:
-		ncount += child.new_count
-	return ncount
-
-def learn_count():
-	top = mw.col.sched.deck_due_tree()
-	lcount = 0
-	for child in top.children:
-		lcount += child.learn_count
-	return lcount
-
-def review_count():
-	top = mw.col.sched.deck_due_tree()
-	rcount = 0
-	for child in top.children:
-		rcount += child.review_count
-	return rcount
-
-def clr_str(s,c):
-	return f"""<font color="#{c}"> {str(s)} </font>"""
-
-def add_info():
-    global n_new
-    global n_learn
-    global n_review
-    global n_learn
-    global n_relearn
-    global n_review1
-    global n_review2
-    global n_review3
-    global n_review4
-    global n_review5
-    global n_review6
-    global n_review7
-    global n_reviewmature
-    global n_reviewsupermature
-    n_new = new_count()
-    n_learn = len(mw.col.find_cards("is:due is:learn prop:ivl=0"))
-    n_relearn = len(mw.col.find_cards("is:due is:learn prop:ivl>0"))
-    n_review1 = len(mw.col.find_cards("is:due is:review prop:ivl=1"))
-    n_review2 = len(mw.col.find_cards("is:due is:review prop:ivl=2"))
-    n_review3 = len(mw.col.find_cards("is:due is:review prop:ivl=3"))
-    n_review4 = len(mw.col.find_cards("is:due is:review prop:ivl=4"))
-    n_review5 = len(mw.col.find_cards("is:due is:review prop:ivl=5"))
-    n_review6 = len(mw.col.find_cards("is:due is:review prop:ivl=6"))
-    n_review7 = len(mw.col.find_cards("is:due is:review prop:ivl>=7 prop:ivl<21"))
-    n_reviewmature = len(mw.col.find_cards("is:due is:review prop:ivl>=21 prop:ivl<99"))
-    n_reviewsupermature = len(mw.col.find_cards("is:due is:review prop:ivl>=100"))
-    
-gui_hooks.main_window_did_init.append(add_info)
-
-# -*- coding: utf-8 -*-
-
-"""
-Anki Add-on: Card Stats
-
-Displays stats in a sidebar while reviewing.
-
-For the most part based on the following add-ons:
-
-- Card Info During Review by Damien Elmes (https://ankiweb.net/shared/info/2179254157)
-- reviewer_show_cardinfo by Steve AW (https://github.com/steveaw/anki_addons/)
-
-This version of Card Stats combines the sidebar in Damien's add-on with the extra
-review log info found in Steve AW's add-on.
-
-Copyright: (c) Glutanimate 2016-2017 <https://glutanimate.com/>
-License: GNU AGPLv3 or later <https://www.gnu.org/licenses/agpl.html>
-"""
-
 from anki.hooks import addHook
 from aqt import mw
 from aqt.gui_hooks import deck_browser_will_render_content, profile_did_open
@@ -101,7 +21,44 @@ import math
 from datetime import datetime, timezone, timedelta, date
 import time
 
+from aqt.gui_hooks import deck_browser_will_render_content, profile_did_open
+
+from aqt import gui_hooks
+
 showDebug = 0
+lrnSteps = 2
+tz = 8 #GMT+ <CHANGE THIS TO YOUR GMT+_ (negative number if you're GMT-)>
+nodays = 7 #how many days ago anki should use to calculate new, learn, relearn, and review weights
+
+def add_info():
+    global n_new
+    global n_learn
+    global n_review
+    global n_learn
+    global n_relearn
+    global n_review1
+    global n_review2
+    global n_review3
+    global n_review4
+    global n_review5
+    global n_review6
+    global n_review7
+    global n_reviewmature
+    global n_reviewsupermature
+    n_new = mw.col.sched.deck_due_tree().new_count
+    n_learn = len(mw.col.find_cards("is:due is:learn -is:review prop:ivl=0"))
+    n_relearn = len(mw.col.find_cards("is:due is:learn is:review prop:ivl>0"))
+    n_review1 = len(mw.col.find_cards("is:due -is:learn is:review prop:ivl=1"))
+    n_review2 = len(mw.col.find_cards("is:due -is:learn is:review prop:ivl=2"))
+    n_review3 = len(mw.col.find_cards("is:due -is:learn is:review prop:ivl=3"))
+    n_review4 = len(mw.col.find_cards("is:due -is:learn is:review prop:ivl=4"))
+    n_review5 = len(mw.col.find_cards("is:due -is:learn is:review prop:ivl=5"))
+    n_review6 = len(mw.col.find_cards("is:due -is:learn is:review prop:ivl=6"))
+    n_review7 = len(mw.col.find_cards("is:due -is:learn is:review prop:ivl>=7 prop:ivl<21"))
+    n_reviewmature = len(mw.col.find_cards("is:due -is:learn is:review prop:ivl>=21 prop:ivl<99"))
+    n_reviewsupermature = len(mw.col.find_cards("is:due -is:learn is:review prop:ivl>=100"))
+    
+gui_hooks.main_window_did_init.append(add_info)
 
 class StatsSidebar(object):
     def __init__(self, mw):
@@ -157,9 +114,7 @@ class StatsSidebar(object):
     #Added IntDate column
     
     def _update(self):
-        lrnSteps = 2
-        
-        x = (mw.col.sched.day_cutoff - 86400*7)*1000
+        x = (mw.col.sched.day_cutoff - 86400*nodays)*1000
 
         """Calculate progress using weights and card counts from the sched."""
         # Get studdied cards  and true retention stats
@@ -222,27 +177,27 @@ class StatsSidebar(object):
         xflunked_supermature = xflunked_supermature or 0
         
         try:
-            xtemp = "%0.1f%%" %(xpassed/float(xpassed+xflunked)*100)
+            xtemp = "%0.2f%%" %(xpassed/float(xpassed+xflunked)*100)
         except ZeroDivisionError:
             xtemp = "N/A"
         try:
-            xtemp_supermature = "%0.1f%%" %(xpassed_supermature/float(xpassed_supermature+xflunked_supermature)*100)
+            xtemp_supermature = "%0.2f%%" %(xpassed_supermature/float(xpassed_supermature+xflunked_supermature)*100)
         except ZeroDivisionError:
             xtemp_supermature = "N/A"
         try:
-            yagain = "%0.1f%%" %(((xfailed)/(xcards))*100)
+            yagain = "%0.2f%%" %(((xfailed)/(xcards))*100)
         except ZeroDivisionError:
             yagain = "N/A"
         
-        TR = round(float(xflunked/(float(max(1,xpassed+xflunked)))),2)
-        TR2 = round(float(xflunked2/(float(max(1,xpassed2+xflunked2)))),2)
-        TR3 = round(float(xflunked3/(float(max(1,xpassed3+xflunked3)))),2)
-        TR4 = round(float(xflunked4/(float(max(1,xpassed4+xflunked4)))),2)
-        TR5 = round(float(xflunked5/(float(max(1,xpassed5+xflunked5)))),2)
-        TR6 = round(float(xflunked6/(float(max(1,xpassed6+xflunked6)))),2)
-        TR7 = round(float(xflunked7/(float(max(1,xpassed7+xflunked7)))),2)
-        TR8 = round(float(xflunked8/(float(max(1,xpassed8+xflunked8)))),2)
-        TR9 = round(float(xflunked_supermature/(float(max(1,xpassed_supermature+xflunked_supermature)))),2)
+        TR = (float(xflunked/(float(max(1,xpassed+xflunked)))))
+        TR2 = (float(xflunked2/(float(max(1,xpassed2+xflunked2)))))
+        TR3 = (float(xflunked3/(float(max(1,xpassed3+xflunked3)))))
+        TR4 = (float(xflunked4/(float(max(1,xpassed4+xflunked4)))))
+        TR5 = (float(xflunked5/(float(max(1,xpassed5+xflunked5)))))
+        TR6 = (float(xflunked6/(float(max(1,xpassed6+xflunked6)))))
+        TR7 = (float(xflunked7/(float(max(1,xpassed7+xflunked7)))))
+        TR8 = (float(xflunked8/(float(max(1,xpassed8+xflunked8)))))
+        TR9 = (float(xflunked_supermature/(float(max(1,xpassed_supermature+xflunked_supermature)))))
         
         xlearnagains = float((xlearn)/max(1,(xlearn+xlearnpass)))
         xrelearnagains = float((xrelearn)/max(1,(xrelearn+xrelearnpass)))
@@ -261,13 +216,11 @@ class StatsSidebar(object):
         revWeight9 = float((1+(1*TR9*lrnSteps))/1)
         
         # Get studdied cards
-        cards, thetime, failed, lrn1, lrn2, flunked, passed, passed_supermature, flunked_supermature = self.mw.col.db.first(
+        cards, thetime, failed, flunked, passed, passed_supermature, flunked_supermature = self.mw.col.db.first(
                 """select 
                 sum(case when ease >=1 then 1 else 0 end), /* cards */
                 sum(time)/1000, /* thetime */
                 sum(case when ease = 1 then 1 else 0 end), /* failed */
-                sum(case when Ivl = -60 then 1 else 0 end), /* lrn1 */
-                sum(case when Ivl = -900 then 1 else 0 end), /* lrn2 */
                 sum(case when ease = 1 and type == 1 then 1 else 0 end), /* flunked */
                 sum(case when ease > 1 and type == 1 then 1 else 0 end), /* passed */
                 sum(case when ease > 1 and type == 1 and lastIvl >= 100 then 1 else 0 end), /* passed_supermature */
@@ -278,29 +231,27 @@ class StatsSidebar(object):
         cards   = cards or 0
         thetime = thetime or 0
         failed = failed or 0 
-        lrn1 = lrn1 or 0
-        lrn2 = lrn2 or 0
         flunked = flunked or 0
         passed = passed or 0
         passed_supermature = passed_supermature or 0
         flunked_supermature = flunked_supermature or 0
         
         #if CountTimesNew == 0: CountTimesNew = 2
-        total = (newWeight*n_new) + (lrnSteps*n_learn) + (lrnSteps*n_relearn) + (revWeight*n_review1) + (revWeight2*n_review2) + (revWeight3*n_review3) + (revWeight4*n_review4) + (revWeight5*n_review5) + (revWeight6*n_review6) + (revWeight7*n_review7) + (revWeight8*n_reviewmature) + (revWeight9*n_reviewsupermature) - (lrn1*(lrnSteps-2)) - (lrn2*(lrnSteps-1))
+        total = (newWeight*n_new) + (lrnWeight*n_learn) + (relrnWeight*n_relearn) + (revWeight*n_review1) + (revWeight2*n_review2) + (revWeight3*n_review3) + (revWeight4*n_review4) + (revWeight5*n_review5) + (revWeight6*n_review6) + (revWeight7*n_review7) + (revWeight8*n_reviewmature) + (revWeight9*n_reviewsupermature)
         
-        totalDisplay = int(total)
+        totalDisplay = round(total)
         #total = new + lrn + due
         
         try:
-            temp = "%0.1f%%" %(passed/float(passed+flunked)*100)
+            temp = "%0.2f%%" %(passed/float(passed+flunked)*100)
         except ZeroDivisionError:
             temp = "N/A"
         try:
-            temp_supermature = "%0.1f%%" %(passed_supermature/float(passed_supermature+flunked_supermature)*100)
+            temp_supermature = "%0.2f%%" %(passed_supermature/float(passed_supermature+flunked_supermature)*100)
         except ZeroDivisionError:
             temp_supermature = "N/A"
         try:
-            again = "%0.1f%%" %(((failed)/(cards))*100)
+            again = "%0.2f%%" %(((failed)/(cards))*100)
         except ZeroDivisionError:
             again = "N/A"
         
@@ -326,7 +277,7 @@ class StatsSidebar(object):
         hrsec = ((minutes-hrhr)*60-hrmin)*60
 
         dt=datetime.today()
-        tz = 8 #GMT+ <CHANGE THIS TO YOUR GMT+_ (negative number if you're GMT-)>
+        
         tzsec = tz*3600
 
         t = timedelta(hours = hrhr, minutes = hrmin, seconds = hrsec)
@@ -347,11 +298,11 @@ class StatsSidebar(object):
                 </head>
             <body style="color:white;font-family:Helvetica Neue;">
                 <center> 
-                {} ({}%) done
+                {} ({:.2f}%) done
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                {} ({}%) left
+                {} ({:.2f}%) left
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                {} ({}) s/card
+                {:.2f} ({:.2f}) s/card
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 {} ({}) AR
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -371,31 +322,27 @@ class StatsSidebar(object):
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 {:.2f} Relearn Weight
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                Learning Stage 1 min.: {} 
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                Learning Stage 15 mins.: {}
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 Learning Cards: {} 
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 Relearning Cards: {}<hr>
                 
-                1 day: {}%
+                1 day: {:.2f}%
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
-                2 days: {}%
+                2 days: {:.2f}%
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
-                3 days: {}%
+                3 days: {:.2f}%
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
-                4 days: {}%
+                4 days: {:.2f}%
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
-                5 days: {}%
+                5 days: {:.2f}%
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
-                6 days: {}%
+                6 days: {:.2f}%
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
-                Young: {}%
+                Young: {:.2f}%
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
-                Mature: {}%
+                Mature: {:.2f}%
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
-                Super Mature: {}%<hr>
+                Super Mature: {:.2f}%<hr>
                 
                 Learn Agains: {}
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
@@ -407,23 +354,23 @@ class StatsSidebar(object):
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
                 Total Agains: {}<hr>
                 
-                1 day: {}
+                1 day: {:.2f}
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                2 days: {}
+                2 days: {:.2f}
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
-                3 days: {}
+                3 days: {:.2f}
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
-                4 days: {}
+                4 days: {:.2f}
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
-                5 days: {}
+                5 days: {:.2f}
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
-                6 days: {}
+                6 days: {:.2f}
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
-                Young: {}
+                Young: {:.2f}
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
-                Mature: {}
+                Mature: {:.2f}
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
-                Super Mature: {}<hr>
+                Super Mature: {:.2f}<hr>
                 1 day: {}
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 2 days: {}
@@ -442,7 +389,7 @@ class StatsSidebar(object):
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
                 Super Mature: {}
                 </center>
-            </body></html>""".format(cards, percenttotalrounded, totalDisplay, percentleft, speed, yspeed, again, yagain, temp, xtemp, temp_supermature, xtemp_supermature, x, y, hrhr, hrmin, ETA, newWeight, lrnWeight, relrnWeight, lrn1, lrn2, n_learn, n_relearn, TR*100, TR2*100, TR3*100, TR4*100, TR5*100, TR6*100, TR7*100, TR8*100, TR9*100, xlearn, xreview, xrelearn, xmanual, xfailed+xmanual, revWeight, revWeight2, revWeight3, revWeight4, revWeight5, revWeight6, revWeight7, revWeight8, revWeight9, n_review1, n_review2, n_review3, n_review4, n_review5, n_review6, n_review7, n_reviewmature, n_reviewsupermature))
+            </body></html>""".format(cards, percenttotalrounded, totalDisplay, percentleft, speed, yspeed, again, yagain, temp, xtemp, temp_supermature, xtemp_supermature, x, y, hrhr, hrmin, ETA, newWeight, lrnWeight, relrnWeight, n_learn, n_relearn, TR*100, TR2*100, TR3*100, TR4*100, TR5*100, TR6*100, TR7*100, TR8*100, TR9*100, xlearn, xreview, xrelearn, xmanual, xfailed+xmanual, revWeight, revWeight2, revWeight3, revWeight4, revWeight5, revWeight6, revWeight7, revWeight8, revWeight9, n_review1, n_review2, n_review3, n_review4, n_review5, n_review6, n_review7, n_reviewmature, n_reviewsupermature))
         else:
             self.web.setHtml("""
             <html>
@@ -450,11 +397,11 @@ class StatsSidebar(object):
                 </head>
             <body style="color:white;font-family:Helvetica Neue;">
                 <center> 
-                {} ({}%) done
+                {} ({:.2f}%) done
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                {} ({}%) left
+                {} ({:.2f}%) left
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                {} ({}) s/card
+                {:.2f} ({:.2f}) s/card
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 {} ({}) AR
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
