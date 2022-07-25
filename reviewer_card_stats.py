@@ -163,7 +163,7 @@ class StatsSidebar(object):
 
         """Calculate progress using weights and card counts from the sched."""
         # Get studdied cards  and true retention stats
-        xcards, ythetime, xfailed, xlearn, xlearnpass, xreview, xrelearn, xrelearnpass, xflunked, xpassed, xflunked2, xpassed2, xflunked3, xpassed3, xflunked4, xpassed4, xflunked5, xpassed5, xflunked6, xpassed6, xflunked7, xpassed7, xflunked8, xpassed8, xpassed_supermature, xflunked_supermature = mw.col.db.first("""
+        xcards, ythetime, xfailed, xlearn, xlearnpass, xreview, xrelearn, xrelearnpass, xmanual, xflunked, xpassed, xflunked2, xpassed2, xflunked3, xpassed3, xflunked4, xpassed4, xflunked5, xpassed5, xflunked6, xpassed6, xflunked7, xpassed7, xflunked8, xpassed8, xpassed_supermature, xflunked_supermature = mw.col.db.first("""
         select
         sum(case when ease >=1 then 1 else 0 end), /* xcards */
         sum(time)/1000, /* ythetime */
@@ -173,6 +173,7 @@ class StatsSidebar(object):
         sum(case when ease = 1 and type == 1 then 1 else 0 end), /* xreview agains */
         sum(case when ease = 1 and type == 2 then 1 else 0 end), /* xrelearn agains */
         sum(case when ease > 1 and type == 2 then 1 else 0 end), /* xrelearn pass */
+        sum(case when ease = 0 then 1 else 0 end), /* manual resched ease 0 */
         sum(case when ease = 1 and type == 1 and lastIvl == 1 then 1 else 0 end), /* xflunked */
         sum(case when ease > 1 and type == 1 and lastIvl == 1 then 1 else 0 end), /* xpassed */
         sum(case when ease = 1 and type == 1 and lastIvl == 2 then 1 else 0 end), /* xflunked2 */
@@ -200,6 +201,7 @@ class StatsSidebar(object):
         xreview = xreview or 0
         xrelearn = xrelearn or 0
         xrelearnpass = xrelearnpass or 0
+        xmanual = xmanual or 0
         xflunked = xflunked or 0
         xpassed = xpassed or 0
         xflunked2 = xflunked2 or 0
@@ -367,8 +369,6 @@ class StatsSidebar(object):
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 {:.2f} Learn Weight
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                {:.2f} Review Weight 
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 {:.2f} Relearn Weight
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 Learning Stage 1 min.: {} 
@@ -401,6 +401,8 @@ class StatsSidebar(object):
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
                 Relearn Agains: {}
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+                Manual Agains: {}
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
                 Total Agains: {}<hr>
                 
                 1 day: {}
@@ -415,11 +417,11 @@ class StatsSidebar(object):
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
                 6 days: {}
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
-                7-20 days: {}
+                Young: {}
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
-                21-99 days: {}
+                Mature: {}
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
-                100+ days: {}<hr>
+                Super Mature: {}<hr>
                 1 day: {}
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 2 days: {}
@@ -432,13 +434,13 @@ class StatsSidebar(object):
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
                 6 days: {}
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
-                7-20 days: {}
+                Young: {}
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
-                21-99 days: {}
+                Mature: {}
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
-                100+ days: {}
+                Super Mature: {}
                 </center>
-            </body></html>""".format(cards, percenttotalrounded, totalDisplay, percentleft, speed, yspeed, again, yagain, temp, xtemp, temp_supermature, xtemp_supermature, x, y, hrhr, hrmin, ETA, newWeight, lrnWeight, revWeight, relrnWeight, lrn1, lrn2, n_learn, n_relearn, TR, TR2, TR3, TR4, TR5, TR6, TR7, TR8, xlearn, xreview, xrelearn, xfailed, revWeight, revWeight2, revWeight3, revWeight4, revWeight5, revWeight6, revWeight7, revWeight8, revWeight9, n_review1, n_review2, n_review3, n_review4, n_review5, n_review6, n_review7, n_reviewmature, n_reviewsupermature))
+            </body></html>""".format(cards, percenttotalrounded, totalDisplay, percentleft, speed, yspeed, again, yagain, temp, xtemp, temp_supermature, xtemp_supermature, x, y, hrhr, hrmin, ETA, newWeight, lrnWeight, relrnWeight, lrn1, lrn2, n_learn, n_relearn, TR, TR2, TR3, TR4, TR5, TR6, TR7, TR8, xlearn, xreview, xrelearn, xmanual, xfailed+xmanual, revWeight, revWeight2, revWeight3, revWeight4, revWeight5, revWeight6, revWeight7, revWeight8, revWeight9, n_review1, n_review2, n_review3, n_review4, n_review5, n_review6, n_review7, n_reviewmature, n_reviewsupermature))
         else:
             self.web.setHtml("""
             <html>
