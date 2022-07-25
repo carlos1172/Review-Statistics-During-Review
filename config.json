@@ -1,6 +1,6 @@
 {
-    "lrnSteps": 2,
-    "nodays": 7,
-    "showDebug": 0,
+    "lrn_steps": 2,
+    "no_days": 7,
+    "show_debug": 0,
     "tz": 8
 }

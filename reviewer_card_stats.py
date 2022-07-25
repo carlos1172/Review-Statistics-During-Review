@@ -1,36 +1,18 @@
 from anki.hooks import addHook
-from aqt import mw
-from aqt.gui_hooks import deck_browser_will_render_content, profile_did_open
-
 from aqt.qt import *
 from aqt.webview import AnkiWebView
-import aqt.stats
-
-from anki.lang import _
-from anki.utils import fmtTimeSpan
-from anki.stats import CardStats
-
-import anki
-from anki.lang import _, ngettext
-import aqt
-from aqt import mw, theme
-from aqt.utils import tooltip
-from aqt.overview import Overview, OverviewContent, OverviewBottomBar
-
+from aqt import mw
 import math
-from datetime import datetime, timezone, timedelta, date
-import time
-
-from aqt.gui_hooks import deck_browser_will_render_content, profile_did_open
-
+from datetime import datetime, timedelta
 from aqt import gui_hooks
 
 config = mw.addonManager.getConfig(__name__)
 
-showDebug = config['showDebug']
-lrnSteps = config['lrnSteps']
-tz = config['tz'] #GMT+ <CHANGE THIS TO YOUR GMT+_ (negative number if you're GMT-)>
-nodays = config['nodays'] #how many days ago anki should use to calculate new, learn, relearn, and review weights
+show_debug = config['show_debug']
+lrn_steps = config['lrn_steps']
+tz = config['tz']  # GMT+ <CHANGE THIS TO YOUR GMT+_ (negative number if you're GMT-)>
+no_days = config['no_days']  # how many days ago anki should use to calculate new, learn, relearn, and review weights
+
 
 def add_info():
     global n_new
@@ -45,8 +27,8 @@ def add_info():
     global n_review5
     global n_review6
     global n_review7
-    global n_reviewmature
-    global n_reviewsupermature
+    global n_review_mature
+    global n_review_super_mature
     n_new = mw.col.sched.deck_due_tree().new_count
     n_learn = len(mw.col.find_cards("is:due is:learn -is:review prop:ivl=0"))
     n_relearn = len(mw.col.find_cards("is:due is:learn is:review prop:ivl>0"))
@@ -57,10 +39,12 @@ def add_info():
     n_review5 = len(mw.col.find_cards("is:due -is:learn is:review prop:ivl=5"))
     n_review6 = len(mw.col.find_cards("is:due -is:learn is:review prop:ivl=6"))
     n_review7 = len(mw.col.find_cards("is:due -is:learn is:review prop:ivl>=7 prop:ivl<21"))
-    n_reviewmature = len(mw.col.find_cards("is:due -is:learn is:review prop:ivl>=21 prop:ivl<99"))
-    n_reviewsupermature = len(mw.col.find_cards("is:due -is:learn is:review prop:ivl>=100"))
-    
+    n_review_mature = len(mw.col.find_cards("is:due -is:learn is:review prop:ivl>=21 prop:ivl<99"))
+    n_review_super_mature = len(mw.col.find_cards("is:due -is:learn is:review prop:ivl>=100"))
+
+
 gui_hooks.main_window_did_init.append(add_info)
+
 
 class StatsSidebar(object):
     def __init__(self, mw):
@@ -70,12 +54,14 @@ class StatsSidebar(object):
         addHook("deckClosing", self.show)
         addHook("reviewCleanup", self.show)
 
-    def _addDockable(self, w):
+    def _add_dockable(self, w):
         class DockableWithClose(QDockWidget):
             closed = pyqtSignal()
+
             def closeEvent(self, evt):
                 self.closed.emit()
                 QDockWidget.closeEvent(self, evt)
+
         dock = DockableWithClose(mw)
         dock.setAllowedAreas(Qt.TopDockWidgetArea | Qt.BottomDockWidgetArea)
         dock.setFeatures(QDockWidget.NoDockWidgetFeatures)
@@ -83,24 +69,27 @@ class StatsSidebar(object):
         mw.addDockWidget(Qt.TopDockWidgetArea, dock)
         return dock
 
-    def _remDockable(self, dock):
+    @staticmethod
+    def _rem_dockable(dock):
         mw.removeDockWidget(dock)
 
     def show(self):
         if not self.shown:
             class ThinAnkiWebView(AnkiWebView):
-                def sizeHint(self):
+                @staticmethod
+                def size_hint():
                     return QSize(200, 100)
+
             self.web = ThinAnkiWebView()
-            self.shown = self._addDockable(self.web)
-            self.shown.closed.connect(self._onClosed)
+            self.shown = self._add_dockable(self.web)
+            self.shown.closed.connect(self._on_closed)
         self._update()
 
     def hide(self):
         if self.shown:
-            self._remDockable(self.shown)
+            self._rem_dockable(self.shown)
             self.shown = None
-            #actionself.mw.form.actionCstats.setChecked(False)
+            # actionself.mw.form.actionCstats.setChecked(False)
 
     def toggle(self):
         if self.shown:
@@ -108,20 +97,20 @@ class StatsSidebar(object):
         else:
             self.show()
 
-    def _onClosed(self):
+    def _on_closed(self):
         # schedule removal for after evt has finished
         self.mw.progress.timer(100, self.hide, False)
 
-    #copy and paste from Browser
-    #Added IntDate column
-    
+    # copy and paste from Browser
+    # Added IntDate column
+
     def _update(self):
         add_info()
-        x = (mw.col.sched.day_cutoff - 86400*nodays)*1000
+        x = (mw.col.sched.day_cutoff - 86400 * no_days) * 1000
 
         """Calculate progress using weights and card counts from the sched."""
-        # Get studdied cards  and true retention stats
-        xcards, ythetime, xfailed, xlearn, xlearnpass, xreview, xrelearn, xrelearnpass, xmanual, xflunked, xpassed, xflunked2, xpassed2, xflunked3, xpassed3, xflunked4, xpassed4, xflunked5, xpassed5, xflunked6, xpassed6, xflunked7, xpassed7, xflunked8, xpassed8, xpassed_supermature, xflunked_supermature = mw.col.db.first("""
+        # Get studied cards  and true retention stats
+        x_cards, y_the_time, x_failed, x_learn, x_learn_pass, x_review, x_re_learn, x_re_learn_pass, x_manual, x_flunked, x_passed, x_flunked2, x_passed2, x_flunked3, x_passed3, x_flunked4, x_passed4, x_flunked5, x_passed5, x_flunked6, x_passed6, x_flunked7, x_passed7, x_flunked8, x_passed8, x_passed_super_mature, x_flunked_super_mature = mw.col.db.first("""
         select
         sum(case when ease >=1 then 1 else 0 end), /* xcards */
         sum(time)/1000, /* ythetime */
@@ -132,169 +121,172 @@ class StatsSidebar(object):
         sum(case when ease = 1 and type == 2 then 1 else 0 end), /* xrelearn agains */
         sum(case when ease > 1 and type == 2 then 1 else 0 end), /* xrelearn pass */
         sum(case when ease = 0 then 1 else 0 end), /* manual resched ease 0 */
-        sum(case when ease = 1 and type == 1 and lastIvl == 1 then 1 else 0 end), /* xflunked */
-        sum(case when ease > 1 and type == 1 and lastIvl == 1 then 1 else 0 end), /* xpassed */
-        sum(case when ease = 1 and type == 1 and lastIvl == 2 then 1 else 0 end), /* xflunked2 */
-        sum(case when ease > 1 and type == 1 and lastIvl == 2 then 1 else 0 end), /* xpassed2 */
-        sum(case when ease = 1 and type == 1 and lastIvl == 3 then 1 else 0 end), /* xflunked3 */
-        sum(case when ease > 1 and type == 1 and lastIvl == 3 then 1 else 0 end), /* xpassed3 */
-        sum(case when ease = 1 and type == 1 and lastIvl == 4 then 1 else 0 end), /* xflunked4 */
-        sum(case when ease > 1 and type == 1 and lastIvl == 4 then 1 else 0 end), /* xpassed4 */
-        sum(case when ease = 1 and type == 1 and lastIvl == 5 then 1 else 0 end), /* xflunked5 */
-        sum(case when ease > 1 and type == 1 and lastIvl == 5 then 1 else 0 end), /* xpassed5 */
-        sum(case when ease = 1 and type == 1 and lastIvl == 6 then 1 else 0 end), /* xflunked6 */
-        sum(case when ease > 1 and type == 1 and lastIvl == 6 then 1 else 0 end), /* xpassed6 */ 
-        sum(case when ease = 1 and type == 1 and lastIvl between 7 and 21 then 1 else 0 end), /* xflunked7 */
-        sum(case when ease > 1 and type == 1 and lastIvl between 7 and 21 then 1 else 0 end), /* xpassed7 */ 
-        sum(case when ease = 1 and type == 1 and lastIvl between 22 and 99 then 1 else 0 end), /* xflunked8 */
-        sum(case when ease > 1 and type == 1 and lastIvl between 22 and 99 then 1 else 0 end), /* xpassed8 */ 
-        sum(case when ease > 1 and type == 1 and lastIvl >= 100 then 1 else 0 end), /* xpassed_supermature */
-        sum(case when ease = 1 and type == 1 and lastIvl >= 100 then 1 else 0 end) /* xflunked_supermature */
-        from revlog where id > ?""",x)
-        xcards = xcards or 0
-        ythetime =  ythetime or 0
-        xfailed = xfailed or 0
-        xlearnpass = xlearnpass or 0
-        xlearn = xlearn or 0
-        xreview = xreview or 0
-        xrelearn = xrelearn or 0
-        xrelearnpass = xrelearnpass or 0
-        xmanual = xmanual or 0
-        xflunked = xflunked or 0
-        xpassed = xpassed or 0
-        xflunked2 = xflunked2 or 0
-        xpassed2 = xpassed2 or 0
-        xflunked3 = xflunked3 or 0
-        xpassed3 = xpassed3 or 0
-        xflunked4 = xflunked4 or 0
-        xpassed4 = xpassed4 or 0
-        xflunked5 = xflunked5 or 0
-        xpassed5 = xpassed5 or 0
-        xflunked6 = xflunked6 or 0
-        xpassed6 = xpassed6 or 0   
-        xflunked7 = xflunked7 or 0
-        xpassed7 = xpassed7 or 0 
-        xflunked8 = xflunked8 or 0
-        xpassed8 = xpassed8 or 0  
-        xpassed_supermature = xpassed_supermature or 0
-        xflunked_supermature = xflunked_supermature or 0
-        
+        sum(case when ease = 1 and type == 1 and lastIvl == 1 then 1 else 0 end), /* x_flunked */
+        sum(case when ease > 1 and type == 1 and lastIvl == 1 then 1 else 0 end), /* x_passed */
+        sum(case when ease = 1 and type == 1 and lastIvl == 2 then 1 else 0 end), /* x_flunked2 */
+        sum(case when ease > 1 and type == 1 and lastIvl == 2 then 1 else 0 end), /* x_passed2 */
+        sum(case when ease = 1 and type == 1 and lastIvl == 3 then 1 else 0 end), /* x_flunked3 */
+        sum(case when ease > 1 and type == 1 and lastIvl == 3 then 1 else 0 end), /* x_passed3 */
+        sum(case when ease = 1 and type == 1 and lastIvl == 4 then 1 else 0 end), /* x_flunked4 */
+        sum(case when ease > 1 and type == 1 and lastIvl == 4 then 1 else 0 end), /* x_passed4 */
+        sum(case when ease = 1 and type == 1 and lastIvl == 5 then 1 else 0 end), /* x_flunked5 */
+        sum(case when ease > 1 and type == 1 and lastIvl == 5 then 1 else 0 end), /* x_passed5 */
+        sum(case when ease = 1 and type == 1 and lastIvl == 6 then 1 else 0 end), /* x_flunked6 */
+        sum(case when ease > 1 and type == 1 and lastIvl == 6 then 1 else 0 end), /* x_passed6 */ 
+        sum(case when ease = 1 and type == 1 and lastIvl between 7 and 21 then 1 else 0 end), /* x_flunked7 */
+        sum(case when ease > 1 and type == 1 and lastIvl between 7 and 21 then 1 else 0 end), /* x_passed7 */ 
+        sum(case when ease = 1 and type == 1 and lastIvl between 22 and 99 then 1 else 0 end), /* x_flunked8 */
+        sum(case when ease > 1 and type == 1 and lastIvl between 22 and 99 then 1 else 0 end), /* x_passed8 */ 
+        sum(case when ease > 1 and type == 1 and lastIvl >= 100 then 1 else 0 end), /* x_passed_super_mature */
+        sum(case when ease = 1 and type == 1 and lastIvl >= 100 then 1 else 0 end) /* x_flunked_super_mature */
+        from revlog where id > ?""", x)
+        x_cards = x_cards or 0
+        y_the_time = y_the_time or 0
+        x_failed = x_failed or 0
+        x_learn_pass = x_learn_pass or 0
+        x_learn = x_learn or 0
+        x_review = x_review or 0
+        x_re_learn = x_re_learn or 0
+        x_re_learn_pass = x_re_learn_pass or 0
+        x_manual = x_manual or 0
+        x_flunked = x_flunked or 0
+        x_passed = x_passed or 0
+        x_flunked2 = x_flunked2 or 0
+        x_passed2 = x_passed2 or 0
+        x_flunked3 = x_flunked3 or 0
+        x_passed3 = x_passed3 or 0
+        x_flunked4 = x_flunked4 or 0
+        x_passed4 = x_passed4 or 0
+        x_flunked5 = x_flunked5 or 0
+        x_passed5 = x_passed5 or 0
+        x_flunked6 = x_flunked6 or 0
+        x_passed6 = x_passed6 or 0
+        x_flunked7 = x_flunked7 or 0
+        x_passed7 = x_passed7 or 0
+        x_flunked8 = x_flunked8 or 0
+        x_passed8 = x_passed8 or 0
+        x_passed_super_mature = x_passed_super_mature or 0
+        x_flunked_super_mature = x_flunked_super_mature or 0
+
         try:
-            xtemp = "%0.2f%%" %(xpassed/float(xpassed+xflunked)*100)
+            x_temp = "%0.2f%%" % (x_passed / float(x_passed + x_flunked) * 100)
         except ZeroDivisionError:
-            xtemp = "N/A"
+            x_temp = "N/A"
         try:
-            xtemp_supermature = "%0.2f%%" %(xpassed_supermature/float(xpassed_supermature+xflunked_supermature)*100)
+            x_temp_super_mature = "%0.2f%%" % (
+                    x_passed_super_mature / float(x_passed_super_mature + x_flunked_super_mature) * 100)
         except ZeroDivisionError:
-            xtemp_supermature = "N/A"
+            x_temp_super_mature = "N/A"
         try:
-            yagain = "%0.2f%%" %(((xfailed)/(xcards))*100)
+            y_again = "%0.2f%%" % ((x_failed / x_cards) * 100)
         except ZeroDivisionError:
-            yagain = "N/A"
-        
-        TR = (float(xflunked/(float(max(1,xpassed+xflunked)))))
-        TR2 = (float(xflunked2/(float(max(1,xpassed2+xflunked2)))))
-        TR3 = (float(xflunked3/(float(max(1,xpassed3+xflunked3)))))
-        TR4 = (float(xflunked4/(float(max(1,xpassed4+xflunked4)))))
-        TR5 = (float(xflunked5/(float(max(1,xpassed5+xflunked5)))))
-        TR6 = (float(xflunked6/(float(max(1,xpassed6+xflunked6)))))
-        TR7 = (float(xflunked7/(float(max(1,xpassed7+xflunked7)))))
-        TR8 = (float(xflunked8/(float(max(1,xpassed8+xflunked8)))))
-        TR9 = (float(xflunked_supermature/(float(max(1,xpassed_supermature+xflunked_supermature)))))
-        
-        xlearnagains = float((xlearn)/max(1,(xlearn+xlearnpass)))
-        xrelearnagains = float((xrelearn)/max(1,(xrelearn+xrelearnpass)))
-        xagain = float((xfailed)/max(1,(xcards)))
-        lrnWeight = float((1+(1*xlearnagains*lrnSteps))/1)
-        relrnWeight = float((1+(1*xrelearnagains*lrnSteps))/1)
-        newWeight = float((1+(1*xagain*lrnSteps))/1)
-        revWeight = float((1+(1*TR*lrnSteps))/1)
-        revWeight2 = float((1+(1*TR2*lrnSteps))/1)
-        revWeight3 = float((1+(1*TR3*lrnSteps))/1)
-        revWeight4 = float((1+(1*TR4*lrnSteps))/1)
-        revWeight5 = float((1+(1*TR5*lrnSteps))/1)
-        revWeight6 = float((1+(1*TR6*lrnSteps))/1)
-        revWeight7 = float((1+(1*TR7*lrnSteps))/1)
-        revWeight8 = float((1+(1*TR8*lrnSteps))/1)
-        revWeight9 = float((1+(1*TR9*lrnSteps))/1)
-        
+            y_again = "N/A"
+
+        tr = (float(x_flunked / (float(max(1, x_passed + x_flunked)))))
+        tr2 = (float(x_flunked2 / (float(max(1, x_passed2 + x_flunked2)))))
+        tr3 = (float(x_flunked3 / (float(max(1, x_passed3 + x_flunked3)))))
+        tr4 = (float(x_flunked4 / (float(max(1, x_passed4 + x_flunked4)))))
+        tr5 = (float(x_flunked5 / (float(max(1, x_passed5 + x_flunked5)))))
+        tr6 = (float(x_flunked6 / (float(max(1, x_passed6 + x_flunked6)))))
+        tr7 = (float(x_flunked7 / (float(max(1, x_passed7 + x_flunked7)))))
+        tr8 = (float(x_flunked8 / (float(max(1, x_passed8 + x_flunked8)))))
+        tr9 = (float(x_flunked_super_mature / (float(max(1, x_passed_super_mature + x_flunked_super_mature)))))
+
+        x_learn_agains = float(x_learn / max(1, (x_learn + x_learn_pass)))
+        x_relearn_agains = float(x_re_learn / max(1, (x_re_learn + x_re_learn_pass)))
+        x_again = float(x_failed / max(1, x_cards))
+        lrn_weight = float((1 + (1 * x_learn_agains * lrn_steps)) / 1)
+        re_lrn_weight = float((1 + (1 * x_relearn_agains * lrn_steps)) / 1)
+        new_weight = float((1 + (1 * x_again * lrn_steps)) / 1)
+        rev_weight = float((1 + (1 * tr * lrn_steps)) / 1)
+        rev_weight2 = float((1 + (1 * tr2 * lrn_steps)) / 1)
+        rev_weight3 = float((1 + (1 * tr3 * lrn_steps)) / 1)
+        rev_weight4 = float((1 + (1 * tr4 * lrn_steps)) / 1)
+        rev_weight5 = float((1 + (1 * tr5 * lrn_steps)) / 1)
+        rev_weight6 = float((1 + (1 * tr6 * lrn_steps)) / 1)
+        rev_weight7 = float((1 + (1 * tr7 * lrn_steps)) / 1)
+        rev_weight8 = float((1 + (1 * tr8 * lrn_steps)) / 1)
+        rev_weight9 = float((1 + (1 * tr9 * lrn_steps)) / 1)
+
         # Get studdied cards
-        cards, thetime, failed, flunked, passed, passed_supermature, flunked_supermature = self.mw.col.db.first(
-                """select 
+        cards, the_time, failed, flunked, passed, passed_super_mature, flunked_super_mature = self.mw.col.db.first(
+            """select 
                 sum(case when ease >=1 then 1 else 0 end), /* cards */
                 sum(time)/1000, /* thetime */
                 sum(case when ease = 1 then 1 else 0 end), /* failed */
                 sum(case when ease = 1 and type == 1 then 1 else 0 end), /* flunked */
                 sum(case when ease > 1 and type == 1 then 1 else 0 end), /* passed */
-                sum(case when ease > 1 and type == 1 and lastIvl >= 100 then 1 else 0 end), /* passed_supermature */
-                sum(case when ease = 1 and type == 1 and lastIvl >= 100 then 1 else 0 end) /* flunked_supermature */
+                sum(case when ease > 1 and type == 1 and lastIvl >= 100 then 1 else 0 end), /* passed_super_mature */
+                sum(case when ease = 1 and type == 1 and lastIvl >= 100 then 1 else 0 end) /* flunked_super_mature */
                 from revlog where id > ?""",
-                (self.mw.col.sched.day_cutoff - 86400) * 1000)
+            (self.mw.col.sched.day_cutoff - 86400) * 1000)
 
-        cards   = cards or 0
-        thetime = thetime or 0
-        failed = failed or 0 
+        cards = cards or 0
+        the_time = the_time or 0
+        failed = failed or 0
         flunked = flunked or 0
         passed = passed or 0
-        passed_supermature = passed_supermature or 0
-        flunked_supermature = flunked_supermature or 0
-        
-        #if CountTimesNew == 0: CountTimesNew = 2
-        total = (newWeight*n_new) + (lrnWeight*n_learn) + (relrnWeight*n_relearn) + (revWeight*n_review1) + (revWeight2*n_review2) + (revWeight3*n_review3) + (revWeight4*n_review4) + (revWeight5*n_review5) + (revWeight6*n_review6) + (revWeight7*n_review7) + (revWeight8*n_reviewmature) + (revWeight9*n_reviewsupermature)
-        
-        totalDisplay = round(total)
-        #total = new + lrn + due
-        
+        passed_super_mature = passed_super_mature or 0
+        flunked_super_mature = flunked_super_mature or 0
+
+        # if CountTimesNew == 0: CountTimesNew = 2
+        total = (new_weight * n_new) + (lrn_weight * n_learn) + (re_lrn_weight * n_relearn) + (
+                rev_weight * n_review1) + (
+                        rev_weight2 * n_review2) + (rev_weight3 * n_review3) + (rev_weight4 * n_review4) + (
+                        rev_weight5 * n_review5) + (rev_weight6 * n_review6) + (rev_weight7 * n_review7) + (
+                        rev_weight8 * n_review_mature) + (rev_weight9 * n_review_super_mature)
+
+        total_display = round(total)
+        # total = new + lrn + due
+
         try:
-            temp = "%0.2f%%" %(passed/float(passed+flunked)*100)
+            temp = "%0.2f%%" % (passed / float(passed + flunked) * 100)
         except ZeroDivisionError:
             temp = "N/A"
         try:
-            temp_supermature = "%0.2f%%" %(passed_supermature/float(passed_supermature+flunked_supermature)*100)
+            temp_super_mature = "%0.2f%%" % (
+                    passed_super_mature / float(passed_super_mature + flunked_super_mature) * 100)
         except ZeroDivisionError:
-            temp_supermature = "N/A"
+            temp_super_mature = "N/A"
         try:
-            again = "%0.2f%%" %(((failed)/(cards))*100)
+            again = "%0.2f%%" % ((failed / cards) * 100)
         except ZeroDivisionError:
             again = "N/A"
-        
-        totaltotal = cards+totalDisplay
-        percenttotal = cards/max(1, totaltotal)*100
-        percenttotalrounded = round(cards/max(1, totaltotal)*100,2)
-        percentleft = round(100-percenttotal,2)
-        
-        speed   = thetime / max(1, cards)
-        yspeed   = ythetime / max(1, xcards)
-        speed = round(speed,2)
-        yspeed = round(yspeed,2)
-        minutes = (total*speed)/3600
-        minutes = round(minutes,2)
-        
-        hr = (total / max(1, speed))/60
 
-        x = math.floor(thetime/3600)
-        y = math.floor((thetime-(x*3600))/60)
-    
+        total_total = cards + total_display
+        percent_total = cards / max(1, total_total) * 100
+        percent_total_rounded = round(cards / max(1, total_total) * 100, 2)
+        percent_left = round(100 - percent_total, 2)
+
+        speed = the_time / max(1, cards)
+        y_speed = y_the_time / max(1, x_cards)
+        speed = round(speed, 2)
+        y_speed = round(y_speed, 2)
+        minutes = (total * speed) / 3600
+        minutes = round(minutes, 2)
+
+        x = math.floor(the_time / 3600)
+        y = math.floor((the_time - (x * 3600)) / 60)
+
         hrhr = math.floor(minutes)
-        hrmin = math.floor(60*(minutes-hrhr))
-        hrsec = ((minutes-hrhr)*60-hrmin)*60
+        hr_min = math.floor(60 * (minutes - hrhr))
+        hr_sec = ((minutes - hrhr) * 60 - hr_min) * 60
 
-        dt=datetime.today()
-        
-        tzsec = tz*3600
+        dt = datetime.today()
 
-        t = timedelta(hours = hrhr, minutes = hrmin, seconds = hrsec)
-        left = dt.timestamp()+tzsec+t.total_seconds()
+        tz_sec = tz * 3600
+
+        t = timedelta(hours=hrhr, minutes=hr_min, seconds=hr_sec)
+        left = dt.timestamp() + tz_sec + t.total_seconds()
 
         date_time = datetime.utcfromtimestamp(left).strftime('%Y-%m-%d %H:%M:%S')
-        date_time_24H = datetime.strptime(date_time, "%Y-%m-%d %H:%M:%S")
-        ETA = date_time_24H.strftime("%I:%M %p")
-        
+        date_time_24_h = datetime.strptime(date_time, "%Y-%m-%d %H:%M:%S")
+        eta = date_time_24_h.strftime("%I:%M %p")
+
         if not self.shown:
             return
 
-        style = self._style()
-        if showDebug:
+        if show_debug:
             self.web.setHtml("""
             <html>
                 <head>
@@ -318,7 +310,7 @@ class StatsSidebar(object):
                 {:02d}:{:02d} more
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 ETA: {}<hr>
-                
+
                 {:.2f} New Weight 
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 {:.2f} Learn Weight
@@ -328,7 +320,7 @@ class StatsSidebar(object):
                 Learning Cards: {} 
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 Relearning Cards: {}<hr>
-                
+
                 1 day: {:.2f}%
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
                 2 days: {:.2f}%
@@ -346,7 +338,7 @@ class StatsSidebar(object):
                 Mature: {:.2f}%
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
                 Super Mature: {:.2f}%<hr>
-                
+
                 Learn Agains: {}
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
                 Review Agains: {}
@@ -356,7 +348,7 @@ class StatsSidebar(object):
                 Manual Agains: {}
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
                 Total Agains: {}<hr>
-                
+
                 1 day: {:.2f}
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 2 days: {:.2f}
@@ -392,7 +384,17 @@ class StatsSidebar(object):
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
                 Super Mature: {}
                 </center>
-            </body></html>""".format(cards, percenttotalrounded, totalDisplay, percentleft, speed, yspeed, again, yagain, temp, xtemp, temp_supermature, xtemp_supermature, x, y, hrhr, hrmin, ETA, newWeight, lrnWeight, relrnWeight, n_learn, n_relearn, TR*100, TR2*100, TR3*100, TR4*100, TR5*100, TR6*100, TR7*100, TR8*100, TR9*100, xlearn, xreview, xrelearn, xmanual, xfailed+xmanual, revWeight, revWeight2, revWeight3, revWeight4, revWeight5, revWeight6, revWeight7, revWeight8, revWeight9, n_review1, n_review2, n_review3, n_review4, n_review5, n_review6, n_review7, n_reviewmature, n_reviewsupermature))
+            </body></html>""".format(cards, percent_total_rounded, total_display, percent_left, speed, y_speed, again,
+                                     y_again, temp, x_temp, temp_super_mature, x_temp_super_mature, x, y, hrhr, hr_min,
+                                     eta,
+                                     new_weight, lrn_weight, re_lrn_weight, n_learn, n_relearn, tr * 100, tr2 * 100,
+                                     tr3 * 100, tr4 * 100, tr5 * 100, tr6 * 100, tr7 * 100, tr8 * 100, tr9 * 100,
+                                     x_learn, x_review, x_re_learn, x_manual, x_failed + x_manual, rev_weight,
+                                     rev_weight2,
+                                     rev_weight3, rev_weight4, rev_weight5, rev_weight6, rev_weight7, rev_weight8,
+                                     rev_weight9,
+                                     n_review1, n_review2, n_review3, n_review4, n_review5, n_review6, n_review7,
+                                     n_review_mature, n_review_super_mature))
         else:
             self.web.setHtml("""
             <html>
@@ -418,22 +420,28 @@ class StatsSidebar(object):
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 ETA: {}
                 </center>
-            </body></html>""".format(cards, percenttotalrounded, totalDisplay, percentleft, speed, yspeed, again, yagain, temp, xtemp, temp_supermature, xtemp_supermature, x, y, hrhr, hrmin, ETA))
-            
-    def _style(self):
+            </body></html>""".format(cards, percent_total_rounded, total_display, percent_left, speed, y_speed, again,
+                                     y_again, temp, x_temp, temp_super_mature, x_temp_super_mature, x, y, hrhr, hr_min,
+                                     eta))
+
+    @staticmethod
+    def _style():
         from anki import version
         if version.startswith("2.0."):
             return ""
         return "td { font-size: 80%; }"
 
+
 _cs = StatsSidebar(mw)
 
-def cardStats(on):
+
+def card_stats(on):
     _cs.toggle()
+
 
 action = QAction(mw)
 action.setText("Review Stats")
 action.setCheckable(True)
 action.setShortcut(QKeySequence("Shift+C"))
 mw.form.menuTools.addAction(action)
-action.toggled.connect(cardStats)
+action.toggled.connect(card_stats)
