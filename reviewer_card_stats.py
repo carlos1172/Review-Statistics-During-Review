@@ -101,7 +101,7 @@ import math
 from datetime import datetime, timezone, timedelta, date
 import time
 
-showDebug = 0
+showDebug = 1
 
 class StatsSidebar(object):
     def __init__(self, mw):
@@ -157,7 +157,7 @@ class StatsSidebar(object):
     #Added IntDate column
     
     def _update(self):
-        lrnSteps = 3
+        lrnSteps = 2
         
         x = (mw.col.sched.day_cutoff - 86400*7)*1000
 
@@ -259,14 +259,13 @@ class StatsSidebar(object):
         revWeight9 = float((1+(1*TR9*lrnSteps))/1)
         
         # Get studdied cards
-        cards, thetime, failed, lrn1, lrn2, lrn3, flunked, passed, passed_supermature, flunked_supermature = self.mw.col.db.first(
+        cards, thetime, failed, lrn1, lrn2, flunked, passed, passed_supermature, flunked_supermature = self.mw.col.db.first(
                 """select 
-                count(), /* cards */
+                sum(case when ease >=1 then 1 else 0 end), /* cards */
                 sum(time)/1000, /* thetime */
                 sum(case when ease = 1 then 1 else 0 end), /* failed */
-                sum(case when Ivl = -900 then 1 else 0 end), /* lrn1 */
-                sum(case when Ivl = -3600 then 1 else 0 end), /* lrn2 */
-                sum(case when Ivl = 1 then 1 else 0 end), /* lrn3 */
+                sum(case when Ivl = -60 then 1 else 0 end), /* lrn1 */
+                sum(case when Ivl = -900 then 1 else 0 end), /* lrn2 */
                 sum(case when ease = 1 and type == 1 then 1 else 0 end), /* flunked */
                 sum(case when ease > 1 and type == 1 then 1 else 0 end), /* passed */
                 sum(case when ease > 1 and type == 1 and lastIvl >= 100 then 1 else 0 end), /* passed_supermature */
@@ -279,15 +278,15 @@ class StatsSidebar(object):
         failed = failed or 0 
         lrn1 = lrn1 or 0
         lrn2 = lrn2 or 0
-        lrn3 = lrn3 or 0
         flunked = flunked or 0
         passed = passed or 0
         passed_supermature = passed_supermature or 0
         flunked_supermature = flunked_supermature or 0
         
         #if CountTimesNew == 0: CountTimesNew = 2
-        total = (newWeight*n_new) + (lrnWeight*n_learn) + (relrnWeight*n_relearn) + (revWeight*n_review1) + (revWeight2*n_review2) + (revWeight3*n_review3) + (revWeight4*n_review4) + (revWeight5*n_review5) + (revWeight6*n_review6) + (revWeight7*n_review7) + (revWeight8*n_reviewmature) + (revWeight9*n_reviewsupermature)
-        totalDisplay = int(((newWeight*n_new) + (lrnWeight*n_learn) + (relrnWeight*n_relearn) + (revWeight*n_review1) + (revWeight2*n_review2) + (revWeight3*n_review3) + (revWeight4*n_review4) + (revWeight5*n_review5) + (revWeight6*n_review6) + (revWeight7*n_review7) + (revWeight8*n_reviewmature) + (revWeight9*n_reviewsupermature)))
+        total = (newWeight*n_new) + (lrnWeight*n_learn) + (relrnWeight*n_relearn) + (revWeight*n_review1) + (revWeight2*n_review2) + (revWeight3*n_review3) + (revWeight4*n_review4) + (revWeight5*n_review5) + (revWeight6*n_review6) + (revWeight7*n_review7) + (revWeight8*n_reviewmature) + (revWeight9*n_reviewsupermature) - (lrn1*(lrnSteps-2)) - (lrn2*(lrnSteps-1))
+        
+        totalDisplay = int(total)
         #total = new + lrn + due
         
         try:
@@ -368,7 +367,7 @@ class StatsSidebar(object):
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 {:.2f} Rev Weight {:.2f} ReLrn Weight
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                Lrn1: {} Lrn2: {} Lrn3: {}
+                Lrn1: {} Lrn2: {}
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 Learning Cards: {} Relearning Cards: {}
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -377,8 +376,10 @@ class StatsSidebar(object):
                 learn agains: {} review agains: {} relearn agains: {} agains total: {}
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 rev1: {} rev2: {} rev3: {} rev4: {} rev5: {} rev6: {} rev7: {} rev8: {} rev9: {}
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                n_rev1: {} n_rev2: {} n_rev3: {} n_rev4: {} n_rev5: {} n_rev6: {} n_rev7: {} n_rev8: {} n_rev9: {}
                 </center>
-            </body></html>""".format(cards, percenttotalrounded, totalDisplay, percentleft, speed, yspeed, again, yagain, temp, xtemp, temp_supermature, xtemp_supermature, x, y, hrhr, hrmin, ETA, newWeight, lrnWeight, revWeight, relrnWeight, lrn1, lrn2, lrn3, n_learn, n_relearn, TR, TR2, TR3, TR4, TR5, TR6, TR7, TR8, xlearn, xreview, xrelearn, xfailed, revWeight, revWeight2, revWeight3, revWeight4, revWeight5, revWeight6, revWeight7, revWeight8, revWeight9))
+            </body></html>""".format(cards, percenttotalrounded, totalDisplay, percentleft, speed, yspeed, again, yagain, temp, xtemp, temp_supermature, xtemp_supermature, x, y, hrhr, hrmin, ETA, newWeight, lrnWeight, revWeight, relrnWeight, lrn1, lrn2, n_learn, n_relearn, TR, TR2, TR3, TR4, TR5, TR6, TR7, TR8, xlearn, xreview, xrelearn, xfailed, revWeight, revWeight2, revWeight3, revWeight4, revWeight5, revWeight6, revWeight7, revWeight8, revWeight9, n_review1, n_review2, n_review3, n_review4, n_review5, n_review6, n_review7, n_reviewmature, n_reviewsupermature))
         else:
             self.web.setHtml("""
             <html>
