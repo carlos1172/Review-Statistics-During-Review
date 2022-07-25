@@ -67,8 +67,8 @@ class StatsSidebar(object):
         self.mw = mw
         self.shown = False
         addHook("showQuestion", self.show)
-        addHook("deckClosing", self._update)
-        addHook("reviewCleanup", self._update)
+        addHook("deckClosing", self.show)
+        addHook("reviewCleanup", self.show)
 
     def _addDockable(self, w):
         class DockableWithClose(QDockWidget):
@@ -116,6 +116,7 @@ class StatsSidebar(object):
     #Added IntDate column
     
     def _update(self):
+        add_info()
         x = (mw.col.sched.day_cutoff - 86400*nodays)*1000
 
         """Calculate progress using weights and card counts from the sched."""
@@ -431,7 +432,7 @@ def cardStats(on):
     _cs.toggle()
 
 action = QAction(mw)
-action.setText("Card Stats")
+action.setText("Review Stats")
 action.setCheckable(True)
 action.setShortcut(QKeySequence("Shift+C"))
 mw.form.menuTools.addAction(action)
