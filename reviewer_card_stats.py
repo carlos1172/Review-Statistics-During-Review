@@ -25,10 +25,12 @@ from aqt.gui_hooks import deck_browser_will_render_content, profile_did_open
 
 from aqt import gui_hooks
 
-showDebug = 0
-lrnSteps = 2
-tz = 8 #GMT+ <CHANGE THIS TO YOUR GMT+_ (negative number if you're GMT-)>
-nodays = 7 #how many days ago anki should use to calculate new, learn, relearn, and review weights
+config = mw.addonManager.getConfig(__name__)
+
+showDebug = config['showDebug']
+lrnSteps = config['lrnSteps']
+tz = config['tz'] #GMT+ <CHANGE THIS TO YOUR GMT+_ (negative number if you're GMT-)>
+nodays = config['nodays'] #how many days ago anki should use to calculate new, learn, relearn, and review weights
 
 def add_info():
     global n_new

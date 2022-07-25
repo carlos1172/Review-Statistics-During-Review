@@ -1,1 +1,1 @@
-{"name": "Review Statistics During Review Cards done Left scard spent left ETA", "mod": 1658723898, "min_point_version": 54, "max_point_version": 54, "branch_index": 0, "disabled": false, "conflicts": [], "update_enabled": true}
+{"name": "Review Statistics During Review Cards done Left scard spent left ETA", "mod": 1658723898, "min_point_version": 54, "max_point_version": 54, "branch_index": 0, "disabled": false, "conflicts": [], "update_enabled": true, "config": {"lrnSteps": 2, "nodays": 7, "showDebug": 0, "tz": 8}}
