@@ -284,7 +284,7 @@ class StatsSidebar(object):
         flunked_supermature = flunked_supermature or 0
         
         #if CountTimesNew == 0: CountTimesNew = 2
-        total = (newWeight*n_new) + (lrnWeight*n_learn) + (relrnWeight*n_relearn) + (revWeight*n_review1) + (revWeight2*n_review2) + (revWeight3*n_review3) + (revWeight4*n_review4) + (revWeight5*n_review5) + (revWeight6*n_review6) + (revWeight7*n_review7) + (revWeight8*n_reviewmature) + (revWeight9*n_reviewsupermature) - (lrn1*(lrnSteps-2)) - (lrn2*(lrnSteps-1))
+        total = (newWeight*n_new) + (lrnSteps*n_learn) + (lrnSteps*n_relearn) + (revWeight*n_review1) + (revWeight2*n_review2) + (revWeight3*n_review3) + (revWeight4*n_review4) + (revWeight5*n_review5) + (revWeight6*n_review6) + (revWeight7*n_review7) + (revWeight8*n_reviewmature) + (revWeight9*n_reviewsupermature) - (lrn1*(lrnSteps-2)) - (lrn2*(lrnSteps-1))
         
         totalDisplay = int(total)
         #total = new + lrn + due
